@@ -30,6 +30,9 @@
       socket.on('chat message', function(msg){
         $('#messages').append($('<li>').text(msg));
       });
+      socket.on('CONN', function(connMsg) {
+          $('#messages').append($('<li>').text(connMsg));
+      });
     </script>
   </body>
 </html>
