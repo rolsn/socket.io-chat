@@ -16,23 +16,37 @@
   <body>
     <ul id="messages"></ul>
     <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
+        <div id="nick"></div><input id="m" autocomplete="off" /><button>Send</button>
     </form>
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
-      var socket = io();
-      $('form').submit(function(){
-        socket.emit('chat message', $('#m').val());
-        $('#m').val('');
-        return false;
-      });
-      socket.on('chat message', function(msg){
-        $('#messages').append($('<li>').text(msg));
-      });
-      socket.on('CONN', function(connMsg) {
-          $('#messages').append($('<li>').text(connMsg));
-      });
+        var socket = io();
+
+        // event listeners
+        socket.on('CHAT', function(msg) {
+          $('#messages').append($('<li>').text(msg));
+        });
+
+        socket.on('CONN', function(connMsg) {
+            $('#messages').append($('<li>').text(connMsg));
+        });
+
+        // emit events
+        // strings starting with / are considered commands, all else are chat msgs
+        $('form').submit(function() {
+            var input = $('#m').val();
+            if (input[0] == '/') {
+                socket.emit('CMD', input);
+            }
+            else {
+                socket.emit('CHAT', $('#m').val());
+            }
+
+            $('#m').val('');
+
+            return false;
+        });
     </script>
   </body>
 </html>
