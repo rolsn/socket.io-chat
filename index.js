@@ -33,13 +33,40 @@ io.on('connection', function(socket) {
 
     socket.on('CHAT', function(msg) {
         console.log(msg);
-        io.emit('CHAT', {'nick': nick, 'msg': msg});
+        io.emit('CHAT', {'nick': clients[uid].nick, 'msg': msg});
     });
 
     socket.on('CMD', function(cmd) {
-        cmd = cmd.substr(1, cmd.length);
-        console.log("CMD:", cmd);
+        var commandMap = {
+            'NICK': cmd_nick,
+            'AWAY': "cmd_away",
+            'PRIVMSG': "cmd_privmsg",
+            'LIST': "cmd_list",
+            'MODE': "cmd_mode",
+            'LUSERS': "cmd_lusers",
+            'MOTD': "cmd_motd",
+            'QUIT': "cmd_quit",
+            'WHOIS': "cmd_whois"
+        }
+        var command = cmd.split(" ")[0].substr(1, cmd.length).toUpperCase();
+        var params = cmd.split(" ").slice(1, cmd.length)
+        console.log("nick: " + nick + ", CMD:", command, ", PARAMS:", params);
+
+        if (command in commandMap) {
+            commandMap[command](command, params)
+        }
     });
+
+    var cmd_nick = function(cmd, params) {
+        if (params.length > 0) {
+            var newNick = params[0];
+
+            console.log("nick change:", nick, "to", newNick);
+            clients[uid].nick = nick = newNick;
+            socket.emit('NICKSET', newNick);
+        }
+
+    };
 
 });
 
