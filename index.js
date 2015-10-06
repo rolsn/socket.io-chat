@@ -32,7 +32,6 @@ io.on('connection', function(socket) {
     });
 
     socket.on('CHAT', function(msg) {
-        console.log(msg);
         io.emit('CHAT', {'nick': clients[uid].nick, 'msg': msg});
     });
 
@@ -43,7 +42,7 @@ io.on('connection', function(socket) {
             'PRIVMSG': "cmd_privmsg",
             'LIST': "cmd_list",
             'MODE': "cmd_mode",
-            'LUSERS': "cmd_lusers",
+            'LUSERS': cmd_lusers,
             'MOTD': "cmd_motd",
             'QUIT': "cmd_quit",
             'WHOIS': "cmd_whois"
@@ -67,6 +66,21 @@ io.on('connection', function(socket) {
         }
 
     };
+
+    var cmd_lusers = function(cmd, params) {
+        var users = [];
+
+        for (prop in clients) {
+            if (!clients.hasOwnProperty(prop)) {
+                continue;
+            }
+
+            users.push(clients[prop].nick);
+        };
+
+        console.log(users);
+        socket.emit('CMD', users);
+    }
 
 });
 
