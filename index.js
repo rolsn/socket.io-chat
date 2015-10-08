@@ -19,7 +19,7 @@ io.on('connection', function(socket) {
 
     clients[uid] = {'nick': nick}
     socket.emit('NICKSET', nick);
-    io.emit('CONN', 'client connected ' + idstring);
+    io.emit('CONN', '* client connected ' + idstring);
     if (VERBOSE) console.log('client connected ' + idstring);
 
     // event listeners
@@ -43,10 +43,10 @@ io.on('connection', function(socket) {
             'PRIVMSG': "cmd_privmsg",
             'LIST': "cmd_list",
             'MODE': "cmd_mode",
-            'LUSERS': cmd_lusers,
             'MOTD': "cmd_motd",
             'QUIT': "cmd_quit",
-            'WHOIS': "cmd_whois"
+            'WHO': cmd_who,
+            'WHOIS': cmd_whois
         }
         var command = cmd.split(" ")[0].substr(1, cmd.length).toUpperCase();
         var params = cmd.split(" ").slice(1, cmd.length)
@@ -61,14 +61,14 @@ io.on('connection', function(socket) {
         if (params.length > 0) {
             var newNick = params[0];
 
-            if (VERBOSE) console.log("nick change:", nick, "to", newNick);
+            if (VERBOSE) console.log("nick change:", nick, "->", newNick);
             clients[uid].nick = nick = newNick;
             socket.emit('NICKSET', newNick);
         }
 
     };
 
-    var cmd_lusers = function(cmd, params) {
+    var cmd_who = function(cmd, params) {
         var users = [];
 
         for (prop in clients) {
@@ -79,8 +79,12 @@ io.on('connection', function(socket) {
             users.push(clients[prop].nick);
         };
 
-        if (VERBOSE) console.log(users);
         socket.emit('CMD', users);
+    }
+
+    var cmd_whois = function(cmd, params) {
+        // just your own whois for now
+        socket.emit('CMD', nick+'@'+ipaddr+" ("+uid+")");
     }
 
 });
