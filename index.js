@@ -53,11 +53,11 @@ io.on('connection', function(socket) {
         if (VERBOSE) console.log("nick: " + nick + ", CMD:", command, ", PARAMS:", params);
 
         if (command in commandMap) {
-            commandMap[command](command, params)
+            commandMap[command](params)
         }
     });
 
-    var cmd_nick = function(cmd, params) {
+    var cmd_nick = function(params) {
         if (params.length > 0) {
             var newNick = params[0];
 
@@ -68,7 +68,7 @@ io.on('connection', function(socket) {
 
     };
 
-    var cmd_who = function(cmd, params) {
+    var cmd_who = function(params) {
         var users = [];
 
         for (prop in clients) {
@@ -82,7 +82,7 @@ io.on('connection', function(socket) {
         socket.emit('CMD', users);
     }
 
-    var cmd_whois = function(cmd, params) {
+    var cmd_whois = function(params) {
         // just your own whois for now
         socket.emit('CMD', nick+'@'+ipaddr+" ("+uid+")");
     }
