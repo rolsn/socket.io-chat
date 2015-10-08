@@ -2,6 +2,7 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
+var VERBOSE = true;
 var clients = {};
 
 app.get('/', function(req, res) {
@@ -11,15 +12,15 @@ app.get('/', function(req, res) {
 });
 
 io.on('connection', function(socket) {
-    io.emit('CONN', 'a user connected');
     var uid = socket.id;
+    var ipaddr = socket.client.conn.remoteAddress;
     var nick = Math.random().toString(36).substr(10);
-    var idstring = '(id=' + uid + ', nick=' + nick + ')'
+    var idstring = '(' + nick + '@' + ipaddr + ')';
 
     clients[uid] = {'nick': nick}
     socket.emit('NICKSET', nick);
-
-    console.log('client connected ' + idstring);
+    io.emit('CONN', 'client connected ' + idstring);
+    if (VERBOSE) console.log('client connected ' + idstring);
 
     // event listeners
 
@@ -28,7 +29,7 @@ io.on('connection', function(socket) {
         var msg = 'client disconnected ' + idstring;
         io.emit('CONN', msg);
 
-        console.log(msg);
+        if (VERBOSE) console.log(msg);
     });
 
     socket.on('CHAT', function(msg) {
@@ -49,7 +50,7 @@ io.on('connection', function(socket) {
         }
         var command = cmd.split(" ")[0].substr(1, cmd.length).toUpperCase();
         var params = cmd.split(" ").slice(1, cmd.length)
-        console.log("nick: " + nick + ", CMD:", command, ", PARAMS:", params);
+        if (VERBOSE) console.log("nick: " + nick + ", CMD:", command, ", PARAMS:", params);
 
         if (command in commandMap) {
             commandMap[command](command, params)
@@ -60,7 +61,7 @@ io.on('connection', function(socket) {
         if (params.length > 0) {
             var newNick = params[0];
 
-            console.log("nick change:", nick, "to", newNick);
+            if (VERBOSE) console.log("nick change:", nick, "to", newNick);
             clients[uid].nick = nick = newNick;
             socket.emit('NICKSET', newNick);
         }
@@ -78,7 +79,7 @@ io.on('connection', function(socket) {
             users.push(clients[prop].nick);
         };
 
-        console.log(users);
+        if (VERBOSE) console.log(users);
         socket.emit('CMD', users);
     }
 
