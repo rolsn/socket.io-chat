@@ -4,6 +4,7 @@ var io = require('socket.io')(http);
 
 var VERBOSE = true;
 var clients = {};
+var nicks = {};
 
 app.get('/', function(req, res) {
     res.sendFile('index.html', {'root': '.'}, function(err) {
@@ -18,7 +19,8 @@ io.on('connection', function(socket) {
     var idstring = '(' + nick + '@' + ipaddr + ')';
 
     clients[uid] = {'nick': nick}
-    socket.emit('NICKSET', nick);
+    nicks[nick] = {'nick': nick, 'uid': uid, 'ipaddr': ipaddr}
+    socket.emit('NICKSET', {status: 'success', newNick: nick});
     io.emit('CONN', '* client connected ' + idstring);
     if (VERBOSE) console.log('client connected ' + idstring);
 
@@ -26,6 +28,7 @@ io.on('connection', function(socket) {
 
     socket.on('disconnect', function(msg) {
         delete clients[uid];
+        delete nicks[nick];
         var msg = 'client disconnected ' + idstring;
         io.emit('CONN', msg);
 
@@ -50,7 +53,7 @@ io.on('connection', function(socket) {
         }
         var command = cmd.split(" ")[0].substr(1, cmd.length).toUpperCase();
         var params = cmd.split(" ").slice(1, cmd.length)
-        if (VERBOSE) console.log("nick: " + nick + ", CMD:", command, ", PARAMS:", params);
+        if (VERBOSE) console.log("nick: " + nick + ", CMD:", command, "PARAMS:", params);
 
         if (command in commandMap) {
             commandMap[command](params)
@@ -61,9 +64,21 @@ io.on('connection', function(socket) {
         if (params.length > 0) {
             var newNick = params[0];
 
-            if (VERBOSE) console.log("nick change:", nick, "->", newNick);
-            clients[uid].nick = nick = newNick;
-            socket.emit('NICKSET', newNick);
+            if (Object.keys(nicks).indexOf(newNick) === -1) {
+                if (VERBOSE) console.log("nick change:", nick, "->", newNick);
+
+                // delete the old nick from the global nicklist
+                nicks[newNick] = nicks[nick];
+                delete nicks[nick];
+                // then create a new one and update
+                clients[uid].nick = nick = newNick;
+
+                socket.emit('NICKSET', {status: 'success', newNick: newNick});
+            }
+            else {
+                // for now, simply 'set' the new nick to the same nick
+                socket.emit('NICKSET', {status: 'error', errormsg: newNick + ' already in use'});
+            }
         }
 
     };
