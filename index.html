@@ -57,9 +57,14 @@
             $('#messages').append($('<li>').text(cmd));
         });
 
-        socket.on('NICKSET', function(nick) {
-            $('#messages').append($('<li>').text('-> your nickname is ' + nick));
-            $('#status').html('nickname: ' + nick);
+        socket.on('NICKSET', function(resp) {
+            if (resp.status == 'success') {
+                $('#messages').append($('<li>').text('* your nickname is ' + resp.newNick));
+                $('#status').html('nickname: ' + resp.newNick);
+            }
+            else {
+                $('#messages').append($('<li>').text(resp.errormsg));
+            }
         });
 
         // emit events
