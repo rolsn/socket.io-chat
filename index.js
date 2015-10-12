@@ -5,6 +5,7 @@ var io = require('socket.io')(http);
 var VERBOSE = true;
 var clients = {};
 var nicks = {};
+var channels = {};
 
 app.get('/', function(req, res) {
     res.sendFile('index.html', {'root': '.'}, function(err) {
@@ -19,18 +20,32 @@ io.on('connection', function(socket) {
     var idstring = '(' + nick + '@' + ipaddr + ')';
 
     clients[uid] = {'nick': nick}
-    nicks[nick] = {'nick': nick, 'uid': uid, 'ipaddr': ipaddr}
-    socket.emit('NICKSET', {status: 'success', newNick: nick});
-    io.emit('CONN', '* client connected ' + idstring);
+    nicks[nick] = {
+        nick: nick,
+        uid: uid,
+        ipaddr: ipaddr,
+        channels: [],
+        away: false
+    }
+    socket.emit('CMD', {
+        status: 'success',
+        command: 'NICK',
+        params: {
+            newNick: nick
+        }
+    });
+
+    io.emit('CONN', 'client connected ' + idstring);
     if (VERBOSE) console.log('client connected ' + idstring);
 
-    // event listeners
+    /*
+     * event listeners
+     */
 
     socket.on('disconnect', function(msg) {
         delete clients[uid];
         delete nicks[nick];
-        var msg = 'client disconnected ' + idstring;
-        io.emit('CONN', msg);
+        io.emit('CONN', 'client disconnected ' + idstring);
 
         if (VERBOSE) console.log(msg);
     });
@@ -41,15 +56,15 @@ io.on('connection', function(socket) {
 
     socket.on('CMD', function(cmd) {
         var commandMap = {
-            'NICK': cmd_nick,
-            'AWAY': "cmd_away",
-            'PRIVMSG': "cmd_privmsg",
-            'LIST': "cmd_list",
-            'MODE': "cmd_mode",
-            'MOTD': "cmd_motd",
-            'QUIT': "cmd_quit",
-            'WHO': cmd_who,
-            'WHOIS': cmd_whois
+            NICK        : cmd_nick,
+            AWAY        : "cmd_away",
+            PRIVMSG     : "cmd_privmsg",
+            LIST        : "cmd_list",
+            MODE        : "cmd_mode",
+            MOTD        : "cmd_motd",
+            QUIT        : "cmd_quit",
+            WHO         : cmd_who,
+            WHOIS       : cmd_whois
         }
         var command = cmd.split(" ")[0].substr(1, cmd.length).toUpperCase();
         var params = cmd.split(" ").slice(1, cmd.length)
@@ -59,6 +74,10 @@ io.on('connection', function(socket) {
             commandMap[command](params)
         }
     });
+
+    /*
+     * callbacks
+     */
 
     var cmd_nick = function(params) {
         if (params.length > 0) {
@@ -70,14 +89,23 @@ io.on('connection', function(socket) {
                 // delete the old nick from the global nicklist
                 nicks[newNick] = nicks[nick];
                 delete nicks[nick];
+
                 // then create a new one and update
                 clients[uid].nick = nick = newNick;
 
-                socket.emit('NICKSET', {status: 'success', newNick: newNick});
-            }
-            else {
-                // for now, simply 'set' the new nick to the same nick
-                socket.emit('NICKSET', {status: 'error', errormsg: newNick + ' already in use'});
+                socket.emit('CMD', {
+                    status: 'success',
+                    command: 'NICK',
+                    params: {
+                        newNick: newNick
+                    }
+                });
+            } else {
+                socket.emit('CMD', {
+                    status: 'error',
+                    command: 'NICK',
+                    statusMsg: newNick + ' already in use'
+                });
             }
         }
 
@@ -94,12 +122,33 @@ io.on('connection', function(socket) {
             users.push(clients[prop].nick);
         };
 
-        socket.emit('CMD', users);
+        socket.emit('CMD', {
+            status: 'success',
+            command: 'WHO',
+            params: {
+                who: users
+            }
+        });
     }
 
     var cmd_whois = function(params) {
-        // just your own whois for now
-        socket.emit('CMD', nick+'@'+ipaddr+" ("+uid+")");
+        var nick = params[0]
+
+        if (nick in nicks) {
+            socket.emit('CMD', {
+                status: 'success',
+                command: 'WHOIS',
+                params: {
+                    whois: nick
+                }
+            });
+        } else {
+            socket.emit('CMD', {
+                status: 'error',
+                command: 'WHOIS',
+                statusMsg: 'no such user ' + nick
+            });
+        }
     }
 
 });
