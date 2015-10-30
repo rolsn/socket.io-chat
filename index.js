@@ -59,9 +59,11 @@ io.on('connection', function(socket) {
             NICK        : cmd_nick,
             AWAY        : "cmd_away",
             PRIVMSG     : "cmd_privmsg",
+            JOIN        : "cmd_join",
             LIST        : "cmd_list",
             MODE        : "cmd_mode",
-            MOTD        : "cmd_motd",
+            MOTD        : cmd_motd,
+            PART        : "cmd_part",
             QUIT        : "cmd_quit",
             WHO         : cmd_who,
             WHOIS       : cmd_whois
@@ -78,6 +80,16 @@ io.on('connection', function(socket) {
     /*
      * callbacks
      */
+
+    var cmd_motd = function() {
+        socket.emit('CMD', {
+            status: 'success',
+            command: 'MOTD',
+            params: {
+                motd: "Welcome to the fake irc server."
+            }
+        });
+    }
 
     var cmd_nick = function(params) {
         if (params.length > 0) {
@@ -150,6 +162,8 @@ io.on('connection', function(socket) {
             });
         }
     }
+
+    cmd_motd();
 
 });
 
