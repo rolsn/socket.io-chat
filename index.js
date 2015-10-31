@@ -19,7 +19,7 @@ io.on('connection', function(socket) {
     var nick = Math.random().toString(36).substr(10);
     var idstring = '(' + nick + '@' + ipaddr + ')';
 
-    clients[uid] = {'nick': nick}
+    clients[uid] = {'nick': nick, socket: socket}
     nicks[nick] = {
         nick: nick,
         uid: uid,
@@ -58,7 +58,7 @@ io.on('connection', function(socket) {
         var commandMap = {
             NICK        : cmd_nick,
             AWAY        : "cmd_away",
-            PRIVMSG     : "cmd_privmsg",
+            PRIVMSG     : cmd_privmsg,
             JOIN        : "cmd_join",
             LIST        : "cmd_list",
             MODE        : "cmd_mode",
@@ -122,6 +122,39 @@ io.on('connection', function(socket) {
         }
 
     };
+
+    var cmd_privmsg = function(params) {
+        var targetNick = params.shift();
+        var message = params.join(" ");
+
+        if (targetNick in nicks) {
+            clients[nicks[targetNick].uid].socket.emit('CMD', {
+                status: 'success',
+                command: 'PRIVMSG',
+                params: {
+                    direction: "incoming",
+                    targetNick: targetNick,
+                    privmsg: message
+                }
+            });
+
+            socket.emit('CMD', {
+                status: 'success',
+                command: 'PRIVMSG',
+                params: {
+                    direction: "outgoing",
+                    targetNick: targetNick,
+                    privmsg: message
+                }
+            });
+        } else {
+            socket.emit('CMD', {
+                status: 'error',
+                command: 'PRIVMSG',
+                statusMsg: targetNick + ': no such user'
+            })
+        }
+    }
 
     var cmd_who = function(params) {
         var users = [];
