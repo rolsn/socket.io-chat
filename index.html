@@ -70,6 +70,18 @@
                 }
             }
 
+            var cmd_privmsg = function(msg) {
+                if (msg.status == 'success') {
+                    if (msg.params.direction == "outgoing") {
+                        $('#messages').append($('<li>').text(msg.params.targetNick + " -> " + msg.params.privmsg));
+                    } else if (msg.params.direction == "incoming") {
+                        $('#messages').append($('<li>').text("unknown -> " + msg.params.privmsg));
+                    }
+                } else {
+                    $('#messages').append($('<li>').text(msg.statusMsg));
+                }
+            }
+
             var cmd_who = function(msg) {
                 if (msg.status == 'success') {
                     $('#messages').append($('<li>').text(msg.params.who));
@@ -87,6 +99,7 @@
             var commandMap = {
                 MOTD        : cmd_motd,
                 NICK        : cmd_nick,
+                PRIVMSG     : cmd_privmsg,
                 WHO         : cmd_who,
                 WHOIS       : cmd_whois
             }
