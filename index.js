@@ -134,6 +134,7 @@ io.on('connection', function(socket) {
                 params: {
                     direction: "incoming",
                     targetNick: targetNick,
+                    sender: nick,
                     privmsg: message
                 }
             });

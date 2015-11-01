@@ -75,7 +75,7 @@
                     if (msg.params.direction == "outgoing") {
                         $('#messages').append($('<li>').text(msg.params.targetNick + " -> " + msg.params.privmsg));
                     } else if (msg.params.direction == "incoming") {
-                        $('#messages').append($('<li>').text("unknown -> " + msg.params.privmsg));
+                        $('#messages').append($('<li>').text(msg.params.sender + " -> " + msg.params.privmsg));
                     }
                 } else {
                     $('#messages').append($('<li>').text(msg.statusMsg));
